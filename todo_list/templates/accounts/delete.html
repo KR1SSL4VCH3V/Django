@@ -1,0 +1,18 @@
+{% extends 'main.html' %}
+{% block content %}
+    <div class="header-bar">
+        <h1>Delete Account</h1>
+    <a href="{% url 'list' %}">Back</a>
+    </div>
+
+    <div class="card-body">
+        <form method="post" action="">
+            {{ form.as_p }}
+            <input class="button" type="submit" value="Delete">
+            {% csrf_token %}
+        </form>
+        <p>Are you sure you want to delete your account?</p>
+    </div>
+
+
+{% endblock %}
