@@ -1,10 +1,11 @@
-from django.urls import path
+from django.urls import include, path
+from rest_framework import routers
 
-from todo_list.tasks.views import TaskList, CreateTask, UpdateTaskView, DeleteTaskView
+from todo_list.tasks.views import TaskViewSet
+
+router = routers.DefaultRouter()
+router.register('tasks', TaskViewSet, basename='tasks')
 
 urlpatterns = (
-    path('', TaskList.as_view(), name='list'),
-    path('create/', CreateTask.as_view(), name='create'),
-    path('update/<int:pk>/', UpdateTaskView.as_view(), name='update-task'),
-    path('delete/<int:pk>/', DeleteTaskView.as_view(), name='delete-task'),
+    path('', include(router.urls)),
 )
