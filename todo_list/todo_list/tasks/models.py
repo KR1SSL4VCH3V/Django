@@ -1,19 +1,11 @@
-
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from django.db import models
 
-UserModel = User
+UserModel = get_user_model()
 
 
 class Task(models.Model):
     MAX_LENGTH_CHAR = 50
-
-    user = models.ForeignKey(
-        UserModel,
-        on_delete=models.CASCADE,
-        null=False,
-        blank=False,
-    )
 
     title = models.CharField(
         max_length=MAX_LENGTH_CHAR,
@@ -24,6 +16,10 @@ class Task(models.Model):
     description = models.TextField(
         null=True,
         blank=True,
+    )
+
+    priority = models.BooleanField(
+        default=False,
     )
 
     complete = models.BooleanField(
@@ -38,4 +34,4 @@ class Task(models.Model):
         return self.title
 
     class Meta:
-        ordering = ['complete']
+        ordering = ['priority']
