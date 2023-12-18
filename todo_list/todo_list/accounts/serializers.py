@@ -60,25 +60,6 @@ class SignInSerializer(serializers.ModelSerializer):
         model = UserModel
         fields = ('username', 'password')
 
-# username_or_email = serializers.CharField()
-    # password = serializers.CharField(
-    #     write_only=True,
-    # )
-    #
-    # def validate(self, data):
-    #     username_or_email = data.get('username')
-    #     password = data.get('username')
-    #
-    #     user = CustomAuthBackEnd().authenticate(
-    #         self.context['request'],
-    #         username_or_email=username_or_email,
-    #         password=password,
-    #     )
-    #
-    #     if user:
-    #         return user
-    #
-
 
 class EditAccountSerializer(serializers.ModelSerializer):
     old_password = serializers.CharField(
