@@ -1,6 +1,9 @@
-from django.apps import AppConfig
+from django.contrib import admin
+
+from todo_list.tasks.models import Task
 
 
-class TasksConfig(AppConfig):
-    default_auto_field = 'django.db.models.BigAutoField'
-    name = 'todo_list.tasks'
+@admin.register(Task)
+class AdminToDoList(admin.ModelAdmin):
+    pass
+
