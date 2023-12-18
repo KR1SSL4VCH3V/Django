@@ -1,63 +1,90 @@
-from django.contrib.auth.mixins import LoginRequiredMixin
-from django.urls import reverse_lazy
-from django.contrib.auth import views as auth_views, login, get_user_model
-from django.views import generic as views
-from todo_list.accounts.forms import SignUpForm
+from rest_framework import generics as rest_views, status
+from django.shortcuts import get_object_or_404
+from django.contrib.auth import get_user_model, authenticate
+from rest_framework.authtoken.models import Token
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+
+from todo_list.accounts.serializers import SignUpSerializer, SignInSerializer, EditAccountSerializer
 
 UserModel = get_user_model()
 
 
-class SignUpView(views.CreateView):
-    template_name = 'accounts/register.html'
-    form_class = SignUpForm
-    success_url = reverse_lazy('list')
+class SignUpView(rest_views.CreateAPIView):
+    serializer_class = SignUpSerializer
 
-    def post(self, request, *args, **kwargs):
-        response = super().post(request, *args, **kwargs)
-        login(request, self.object)
-        return response
-
-
-# class SignUpView(views.CreateView):
-#     template_name = 'accounts/register.html'
-#     form_class = NewUserForm
-#     success_url = reverse_lazy('list')
-#
-#     def form_valid(self, form):
-#         result = super().form_valid(form)
-#         login(self.request, self.object)
-#
-#         return result
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            self.perform_create(serializer)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.data, status=status.HTTP_400_BAD_REQUEST)
 
 
-class SignInView(auth_views.LoginView):
-    template_name = 'accounts/sign-in.html'
-    redirect_authenticated_user = False
+class SignInView(rest_views.GenericAPIView):
+    serializer_class = SignInSerializer
 
-    def get_success_url(self):
-        return reverse_lazy('list')
+    @staticmethod
+    def post(request):
+        username = request.data.get('username')
+        password = request.data.get('password')
 
+        user = authenticate(username=username, password=password)
 
-class SignOutView(auth_views.LogoutView):
-    next_page = reverse_lazy('sign-in')
+        if user is not None:
+            token, created = Token.objects.get_or_create(user=user)
+            return Response({'token': token.key}, status=status.HTTP_200_OK)
 
-
-class EditAccountUser(LoginRequiredMixin, views.UpdateView):
-    model = UserModel
-    template_name = 'accounts/edit.html'
-    fields = '__all__'
-    context_object_name = 'user'
-
-    def get_success_url(self):
-        return reverse_lazy('edit', kwargs={
-            'pk': self.request.user.pk,
-        })
+        return Response({'error': 'Invalid credentials'}, status=status.HTTP_400_BAD_REQUEST)
 
 
-class DeleteAccount(LoginRequiredMixin, views.DeleteView):
-    model = UserModel
-    template_name = 'accounts/delete.html'
-    context_object_name = 'user'
+class SignOutView(rest_views.GenericAPIView):
+    permission_classes = [IsAuthenticated]
 
-    def get_success_url(self):
-        return reverse_lazy('register')
+    @staticmethod
+    def post(request):
+        try:
+            Token.objects.get(user=request.user).delete()
+            print('The user is log out')
+            return Response({'detail': 'Logged out successfully!'}, status=status.HTTP_200_OK)
+        except Token.DoesNotExist:
+            return Response({'detail': 'User is not logged in!'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class EditAccountView(rest_views.UpdateAPIView):
+    queryset = UserModel.objects.all()
+    serializer_class = EditAccountSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_object(self):
+        pk = self.kwargs.get('pk')
+        return get_object_or_404(UserModel, pk=pk)
+
+    def put(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data)
+
+        if serializer.is_valid():
+            instance.username = serializer.validated_data.get('username', instance.username)
+            instance.email = serializer.validated_data.get('email', instance.email)
+            if serializer.validated_data.get('new_password1'):
+                instance.set_password(serializer.validated_data['new_password1'])
+            print(serializer)
+            instance.save()
+            return Response({'message': 'Account updated successfully!'}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class DeleteAccount(rest_views.DestroyAPIView):
+    queryset = UserModel.objects.all()
+    lookup_field = 'pk'
+
+    def get_object(self):
+        pk = self.kwargs.get('pk')
+        return get_object_or_404(UserModel, pk=pk)
+
+    def delete(self, request, *args, **kwargs):
+        instance = self.get_object()
+        instance.delete()
+        return Response({'message': 'Account deleted successfully!'})
+
