@@ -1,49 +1,59 @@
-from django.shortcuts import render
-'''somepasssword2355'''
-from django.contrib.auth.mixins import LoginRequiredMixin
-from django.contrib.auth.models import User
-from django.urls import reverse_lazy
-from django.views import generic as views
-
+from django.http import Http404
+from rest_framework import viewsets, status
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
 from todo_list.tasks.models import Task
+from todo_list.tasks.serializers import TaskSerializer
 
 
-class TaskList(LoginRequiredMixin, views.ListView):
-    model = Task
-    user = User
-    context_object_name = 'tasks'
-    template_name = 'tasks/list.html'
+class TaskViewSet(viewsets.ModelViewSet):
+    queryset = Task.objects.all()
+    serializer_class = TaskSerializer
+    permission_classes = [IsAuthenticated]
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['tasks'] = context['tasks'].filter(user=self.request.user)
-        context['count'] = context['tasks'].filter(complete=False).count()
-        search_input = self.request.GET.get('search-area') or ''
-        if search_input:
-            context['tasks'] = context['tasks'].filter(title__icontains=search_input)
+    def get_object(self):
+        try:
+            return Task.objects.get(id=self.kwargs['pk'])
+        except Task.DoesNotExist:
+            raise Http404('Task does not exist!')
 
-        context['search_input'] = search_input
+    def get_queryset(self):
+        priority_task = Task.objects.filter(priority=True).order_by('-created_date')
+        non_priority_task = Task.objects.filter(priority=False).order_by('-created_date')
 
-        return context
+        tasks = list(priority_task) + list(non_priority_task)
 
+        return tasks
+   
+    def create(self, request, *args, **kwargs):
+        serializer = TaskSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({'message': 'Successfully created task'}, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-class CreateTask(LoginRequiredMixin, views.CreateView):
-    model = Task
-    fields = ['title', 'description', 'complete', ]
-    success_url = reverse_lazy('list')
+    def update(self, request, *args, **kwargs):
 
-    def form_valid(self, form):
-        form.instance.user = self.request.user
-        return super(CreateTask, self).form_valid(form)
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
 
+        print('updated')
+        self.perform_update(serializer)
 
-class UpdateTaskView(LoginRequiredMixin, views.UpdateView):
-    model = Task
-    fields = ['title', 'description', 'complete', ]
-    success_url = reverse_lazy('list')
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
+    def destroy(self, request, *args, **kwargs):
+        try:
+            instance = self.get_object()
+            self.perform_destroy(instance)
+            print('object deleted')
+        except Http404:
+            print('not found after exception')
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        print('not found')
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
-class DeleteTaskView(LoginRequiredMixin, views.DeleteView):
-    model = Task
-    context_object_name = 'task'
-    success_url = reverse_lazy('list')
+    def perform_destroy(self, instance):
+        instance.delete()
