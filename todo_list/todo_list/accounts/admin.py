@@ -1,8 +1,8 @@
 from django.contrib import admin
 
-from todo_list.accounts.models import Profile
+from task_manager.accounts.models import CustomUser
 
 
-@admin.register(Profile)
-class AdminProfile(admin.ModelAdmin):
+@admin.register(CustomUser)
+class CustomUserAdmin(admin.ModelAdmin):
     pass
