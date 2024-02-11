@@ -27,8 +27,12 @@ class LogInView(rest_views.GenericAPIView):
     serializer_class = LogInSerializer
     authentication_classes = [TokenAuthentication]
 
-    @staticmethod
-    def post(request):
+    def post(self, request):
+        serializer = self.serializer_class(data=request.data)
+
+        if serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_200_OK)
+
         user = authenticate(username=request.data['username'], password=request.data['password'])
 
         if user:
@@ -36,7 +40,7 @@ class LogInView(rest_views.GenericAPIView):
             print(token)
             return Response({'token': token.key}, status=status.HTTP_200_OK)
 
-        return Response({'error': 'Invalid credentials'}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({'error': 'Invalid username or password.'}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class EditAccountView(rest_views.UpdateAPIView):
