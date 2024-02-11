@@ -5,6 +5,11 @@ from rest_framework import serializers
 SPECIAL_CHARS = r"[!@#$%^&*(),.?\":{}|<>]"
 
 
+def validate_username(value):
+    if len(value) < 2:
+        raise serializers.ValidationError('The username must be at least two characters!')
+
+
 def validate_password1(value):
     if len(value) < 8:
         raise serializers.ValidationError('The password must be at least 8 characters!')
