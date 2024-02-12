@@ -24,7 +24,7 @@ class RegisterViewTest(APITestCase):
         view = RegisterView.as_view()
 
         response = view(request)
-        print(response.data)
+        
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertIn('serializer', response.data)
@@ -41,14 +41,9 @@ class RegisterViewTest(APITestCase):
         view = RegisterView.as_view()
 
         response = view(request)
-        print(response.data)
+       
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIsNot('username', response.data)
-        self.assertIsNot('email', response.data)
-        self.assertIsNot('password1', response.data)
-        self.assertIsNot('password2', response.data)
-
 
 class LogInViewTest(APITestCase):
     def setUp(self):
