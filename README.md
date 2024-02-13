@@ -6,7 +6,7 @@ A Django-based web application for managing tasks
 
 User Authentication:\
     -User registration with validation.\
-    -Token-based authentication for secure logins.\
+    -Token-based authentication for secure logins.
 
 Account Management:\
     -Edit user account details. \
