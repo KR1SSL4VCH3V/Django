@@ -1,7 +1,7 @@
 import math
 
 from rest_framework import generics as rest_api, status
-from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from task_manager.tasks.models import Task
@@ -11,7 +11,7 @@ from task_manager.tasks.serializers import TaskSerializer
 class HomeTaskView(rest_api.GenericAPIView):
     queryset = Task.objects.all().order_by('created_date')
     serializer_class = TaskSerializer
-    permission_classes = [IsAuthenticatedOrReadOnly]
+    permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         return Task.objects.filter(user=self.request.user).order_by('-created_date')
