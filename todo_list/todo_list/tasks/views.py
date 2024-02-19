@@ -1,5 +1,9 @@
+import datetime
 import math
+from copy import deepcopy
 
+from django.db import IntegrityError
+from django.utils import timezone
 from rest_framework import generics as rest_api, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -9,12 +13,15 @@ from task_manager.tasks.serializers import TaskSerializer
 
 
 class HomeTaskView(rest_api.GenericAPIView):
-    queryset = Task.objects.all().order_by('created_date')
+    # queryset = Task.objects.all().order_by('priority')
     serializer_class = TaskSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return Task.objects.filter(user=self.request.user).order_by('-created_date')
+        return (
+            Task.objects.filter(
+                user=self.request.user,
+                due_date__gte=timezone.now() - datetime.timedelta(weeks=2)).order_by('-priority'))
 
     def get(self, request):
         page_num = int(request.GET.get('page', 1))
@@ -39,14 +46,34 @@ class HomeTaskView(rest_api.GenericAPIView):
         })
 
     def post(self, request, *args, **kwargs):
-        serializer = self.serializer_class(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response({'message': 'Successfully created task!'}, status=status.HTTP_201_CREATED)
+        mutable_data = deepcopy(request.data)
+        serializer = self.serializer_class(data=mutable_data)
+        try:
+            if serializer.is_valid():
+                serializer.save()
+                return Response({'message': 'Successfully created task!'}, status=status.HTTP_201_CREATED)
+        except IntegrityError as e:
+            return Response({'error': 'Task with the same title already exists.'}, status=status.HTTP_400_BAD_REQUEST)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class DeleteTaskView(rest_api.DestroyAPIView):
+class EditTaskView(rest_api.RetrieveUpdateAPIView):
+    queryset = Task.objects.all()
+    serializer_class = TaskSerializer
+    permission_classes = [IsAuthenticated]
+    lookup_field = 'pk'
+
+    def put(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=True)
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response({'message': 'Task updated successfully!'}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class DeleteTaskView(rest_api.RetrieveDestroyAPIView):
     queryset = Task.objects.all()
     serializer_class = TaskSerializer
     permission_classes = [IsAuthenticated]
