@@ -1,64 +1,60 @@
-from django.contrib.auth import get_user_model
-from rest_framework.authtoken.models import Token
-from rest_framework.test import APIRequestFactory, APITestCase, force_authenticate
+import json
 
+from django.test import RequestFactory, TestCase
+
+from rest_framework import status
+from rest_framework.test import force_authenticate
+from django.contrib.auth import get_user_model
 from task_manager.tasks.models import Task
-from task_manager.tasks.views import HomeTaskView, DeleteTaskView
+from task_manager.tasks.views import HomeTaskView, EditTaskView, DeleteTaskView
 
 UserModel = get_user_model()
 
 
-class TestTaskView(APITestCase):
-
+class TaskIntegrationTest(TestCase):
     def setUp(self):
-        self.factory = APIRequestFactory()
-        self.user = UserModel.objects.create_user(
-            username='test_user', password='test_password'
-        )
-        self.token = Token.objects.create(user=self.user)
-        self.view = HomeTaskView.as_view()
+        self.user = UserModel.objects.create_user(username='test_user', password='test_password')
+        self.factory = RequestFactory()
 
-        self.url = '/api/home/'
-
-    def test_get_task_authenticated(self):
-        request = self.factory.get(self.url)
-        force_authenticate(request, user=self.user, token=self.token)
-
-        response = self.view(request)
-
-        self.assertEqual(response.status_code, 200)
-
-    def test_list_tasks(self):
-        response = self.client.get(self.url)
-
-        self.assertEqual(response.status_code, 200)
-
-    def test_create_task(self):
-        data = {
-            'title': 'test',
-            'description': '',
-            'priority': False,
-            'created_date': '',
-        }
-        request = self.factory.post(self.url, data)
-        force_authenticate(request, user=self.user, token=self.token)
-
-        view_func = self.view
-        response = view_func(request)
-
-        print(response.data)
-        self.assertEqual(response.status_code, 201)
-        self.assertEqual(Task.objects.count(), 1)
-        self.assertEqual(Task.objects.get().title, 'test')
-
-    def test_delete_task(self):
-        task = Task.objects.create(title='test')
-        url = f'/api/delete/{task.pk}/'
-        request = self.factory.delete(url)
+    def test_home_task_view(self):
+        request = self.factory.get('/home/')
         force_authenticate(request, user=self.user)
-        view = DeleteTaskView.as_view()(request, pk=task.pk)
+        response = HomeTaskView.as_view()(request)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        response = view
+    def test_create_task_view(self):
+        task_data = {
+            'title': 'Test Task',
+            'description': 'Test Description',
+            'priority': False,
+            'due_date': '2024-03-23',
+        }
+        request = self.factory.post('/home/', data=json.dumps(task_data), content_type='application/json')
+        force_authenticate(request, user=self.user)
+        response = HomeTaskView.as_view()(request)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(Task.objects.count(), 1)
+        self.assertEqual(Task.objects.get().title, 'Test Task')
 
-        self.assertEqual(response.status_code, 204)
+    def test_edit_task_view(self):
+        task = Task.objects.create(title='Existing Task')
+        edit_data = {
+            'title': 'Updated Task',
+            'description': 'Updated Description',
+            'priority': True,
+            'due_date': '2024-03-23',
+        }
+        request = self.factory.put(f'/edit/{task.pk}/', data=json.dumps(edit_data), content_type='application/json')
+        force_authenticate(request, user=self.user)
+        response = EditTaskView.as_view()(request, pk=task.pk)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        task.refresh_from_db()
+        self.assertEqual(task.title, 'Updated Task')
+
+    def test_delete_task_view(self):
+        task = Task.objects.create(title='Task to Delete')
+        request = self.factory.delete(f'/delete/{task.pk}/')
+        force_authenticate(request, user=self.user)
+        response = DeleteTaskView.as_view()(request, pk=task.pk)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertFalse(Task.objects.filter(pk=task.id).exists())
