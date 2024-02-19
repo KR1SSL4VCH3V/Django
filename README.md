@@ -6,7 +6,7 @@ A web application built with Django for managing tasks and projects.
 
 #### User Authentication:
 Users can register and create accounts to access the application.
-### Task Management:
+#### Task Management:
 Users can create, edit, and delete tasks within the application.
 
 #### Due Dates:
