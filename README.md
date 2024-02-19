@@ -9,16 +9,16 @@ Users can register and create accounts to access the application.
 ### Task Management:
 Users can create, edit, and delete tasks within the application.
 
-### Due Dates:
+#### Due Dates:
 Users can set due dates for their tasks to help them manage deadlines.
-### Task Search:
+#### Task Search:
 The application provides a search functionality to allow users to quickly find specific tasks by title or description.
-### Task Pagination:
+#### Task Pagination:
 Tasks are displayed in a paginated format, making it easier to navigate through a large number of tasks.
 
-### RESTful API: 
+#### RESTful API: 
 The application includes a RESTful API built with Django REST Framework, which can be useful for integrating with other systems or building a separate frontend.
-### No Frontend:
+#### No Frontend:
 The project currently does not have a dedicated frontend and relies on the Django server-rendered views for the user interface.
 
 ## Technologies Used:
