@@ -6,7 +6,7 @@ A web application built with Django for managing tasks and projects.
 
 ### Prerequisites
 
-- Python (version 3.9)
+- Python (version 3.12)
 - pip
 
 ### Installation
