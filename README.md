@@ -1,19 +1,17 @@
 # Task Manager
 
-A Django-based web application for managing tasks
+A web application built with Django for managing tasks and projects.
 
-## Features
+## Setup
 
-1.User Authentication:\
-    -User registration with validation.\
-    -Token-based authentication for secure logins.
+### Prerequisites
 
-2.Account Management:\
-    -Edit user account details. \
-    -Delete user account.
+- Python (version 3.9)
+- pip
 
-3.Task Management:\
-    -List tasks for the authenticated user.\
-    -Create tasks with title, description, and priority.\
-    -Delete user-specific tasks.
+### Installation
 
+1. **Clone the repository**
+
+   ```bash
+   git clone https://github.com/Kris-R-Slavchev/django_task_manager.git
